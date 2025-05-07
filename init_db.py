@@ -29,7 +29,8 @@ cur.execute('DROP TABLE IF EXISTS admin;')
 cur.execute('CREATE TABLE users (id serial PRIMARY KEY,'
             'username varchar (150) NOT NULL,'
             'email varchar (150) NOT NULL,'
-            'password varchar (150) NOT NULL);'
+            'password varchar (150) NOT NULL,'
+            'mobile_refresh_token varchar NULL);' 
             )
 
 data = [
