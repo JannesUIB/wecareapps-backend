@@ -23,8 +23,11 @@ conn = psycopg2.connect(
 cur = conn.cursor()
 
 # Execute a command: this creates a new table
-cur.execute('DROP TABLE IF EXISTS users;')
-cur.execute('DROP TABLE IF EXISTS admin;')
+cur.execute('DROP TABLE IF EXISTS users CASCADE;')
+cur.execute('DROP TABLE IF EXISTS doctor CASCADE;')
+cur.execute('DROP TABLE IF EXISTS appointments CASCADE;')
+cur.execute('DROP TABLE IF EXISTS receipts CASCADE;')
+cur.execute('DROP TABLE IF EXISTS global_setting CASCADE;')
 
 cur.execute('CREATE TABLE users (id serial PRIMARY KEY,'
             'username varchar (150) NOT NULL,'
@@ -32,6 +35,59 @@ cur.execute('CREATE TABLE users (id serial PRIMARY KEY,'
             'password varchar (150) NOT NULL,'
             'mobile_refresh_token varchar NULL);' 
             )
+
+cur.execute('CREATE TABLE doctor (id serial PRIMARY KEY,'
+            'username varchar (150) NOT NULL,'
+            'email varchar (150) NOT NULL,'
+            'password varchar (150) NOT NULL,' 
+            'session_time_start integer NOT NULL,' 
+            'session_time_end integer NOT NULL,'
+            'session_interval integer NOT NULL);' 
+            )
+
+cur.execute('''
+    CREATE TABLE appointments (
+        id SERIAL PRIMARY KEY,
+        appointment_date DATE NOT NULL,
+        doctor_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        child_name VARCHAR(150) NOT NULL,
+        description VARCHAR(150) NOT NULL,
+        session_time_start TIMESTAMP NOT NULL,
+        session_time_end TIMESTAMP NOT NULL,
+        status VARCHAR(50),
+        CONSTRAINT fk_doctor FOREIGN KEY (doctor_id) REFERENCES doctor(id) ON DELETE CASCADE,
+        CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+''')
+
+cur.execute('''
+    CREATE TABLE receipts (
+    id SERIAL PRIMARY KEY,
+    appointment_id INTEGER NOT NULL,
+    booking_fees INTEGER NOT NULL, 
+    extra_fees INTEGER NOT NULL,
+    medicine_fees INTEGER NOT NULL,
+    status VARCHAR(50),
+    CONSTRAINT fk_appointments FOREIGN KEY (appointment_id) REFERENCES appointments(id) ON DELETE CASCADE);
+''')
+
+cur.execute('''
+    CREATE TABLE global_setting (
+    id SERIAL PRIMARY KEY,
+    key VARCHAR(100) UNIQUE NOT NULL,
+    value INTEGER NOT NULL
+);
+''')
+
+cur.execute('''
+    CREATE TABLE payments (
+    id SERIAL PRIMARY KEY,
+    receipt_id INTEGER NOT NULL,
+    image BYTEA,
+    CONSTRAINT fk_receipts FOREIGN KEY (receipt_id) REFERENCES receipts(id) ON DELETE CASCADE);
+''')
+
 
 data = [
   ('Patrick Pratama Hendri', '1200005.patrick@email.com', 'zedkxdrnfplsuchj'),
@@ -73,6 +129,22 @@ for record in data:
       "INSERT INTO users (username,email,password) VALUES (%s, %s, %s)",
       record
   )
+
+cur.execute('''
+    INSERT INTO doctor (username, email, password, session_time_start, session_time_end, session_interval)
+    VALUES 
+        ('Dr. Yusuf', 'yusuf@clinic.com', 'pass123', 1, 8, 1),
+        ('Dr. Wafiq', 'wafiq@clinic.com', 'secure456', 9, 17, 2),  
+        ('Dr. Idris', 'idris@clinic.com', 'mypassword', 17, 23, 3);
+''')
+
+cur.execute('''
+    INSERT INTO global_setting (key, value) VALUES
+    ('booking_fees', 200000),
+    ('extra_fees', 150000),
+    ('medicine', 100000);
+
+''')
 
 conn.commit()
 
